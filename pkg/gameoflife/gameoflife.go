@@ -38,16 +38,17 @@ type Game struct {
 	buffer        [][]int
 	rules         [2][9]int
 	cycleDuration time.Duration
+	drawingFunc   func([][]int)
 }
 
 func NewGame(rows int, cols int, durationMsecs int) *Game {
 	board := make([][]int, rows)
-	for i := 0; i < cols; i++ {
+	for i := 0; i < rows; i++ {
 		board[i] = make([]int, cols)
 	}
 
 	buffer := make([][]int, rows)
-	for i := 0; i < cols; i++ {
+	for i := 0; i < rows; i++ {
 		buffer[i] = make([]int, cols)
 	}
 
@@ -148,6 +149,10 @@ func (g *Game) wait(startTime time.Time) {
 	time.Sleep(remainingTime)
 }
 
+func (g *Game) SetDrawingFunc(drawingFunc func([][]int)) {
+	g.drawingFunc = drawingFunc
+}
+
 func (g *Game) Start() {
 	g.fillWithRandom()
 
@@ -155,7 +160,7 @@ func (g *Game) Start() {
 		startTime := time.Now()
 		g.generateNewGeneration()
 		g.swapMatrices()
-		// g.draw()
+		g.drawingFunc(g.board)
 		g.wait(startTime)
 	}
 }
