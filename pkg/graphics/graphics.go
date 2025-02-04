@@ -13,6 +13,8 @@ const (
 	ALIVE    = 0x2588
 )
 
+var stateLabels [3]string = [3]string{"CLOSED", "RUNNING", "PAUSED"}
+
 func Init() {
 	termbox.Init()
 }
@@ -29,17 +31,19 @@ func GetScreenSize() (int, int) {
 	return termbox.Size()
 }
 
-func renderFrame() {
+func renderFrame(gameState int) {
 	scrW, scrH := termbox.Size()
 	termbox.SetCell(0, 0, TOPLEFT, termbox.ColorWhite, termbox.ColorBlack)
 	termbox.SetCell(scrW-1, 0, TOPRIGHT, termbox.ColorWhite, termbox.ColorBlack)
 	termbox.SetCell(0, scrH-1, BOTLEFT, termbox.ColorWhite, termbox.ColorBlack)
 	termbox.SetCell(scrW-1, scrH-1, BOTRIGHT, termbox.ColorWhite, termbox.ColorBlack)
 
-	for col := 1; col < scrW-1; col++ {
-		if col <= len(LABEL) {
+	completeLabel := " " + LABEL + " - " + stateLabels[gameState] + " "
 
-			termbox.SetCell(col, 0, rune(LABEL[col-1]), termbox.ColorWhite, termbox.ColorBlack)
+	for col := 1; col < scrW-1; col++ {
+		if col <= len(completeLabel) {
+
+			termbox.SetCell(col, 0, rune(completeLabel[col-1]), termbox.ColorWhite, termbox.ColorBlack)
 		} else {
 			termbox.SetCell(col, 0, HLINE, termbox.ColorWhite, termbox.ColorBlack)
 		}
@@ -71,8 +75,8 @@ func renderBoard(board [][]int) {
 	}
 }
 
-func Render(board [][]int) {
-	renderFrame()
+func Render(board [][]int, gameState int) {
+	renderFrame(gameState)
 	renderBoard(board)
 	update()
 }

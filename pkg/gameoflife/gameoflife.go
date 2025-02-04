@@ -1,34 +1,16 @@
-/*
-	export Game object
-	call game.Start()
-
-	game object:
-		- 2D matrix: board
-		- 2D matrix: buffer
-		- rules: array of two items
-			- where every item is an array of 9 bools
-
-	algorithm description:
-	- init
-		- fill with random values
-	- run
-		- iterate through every cell
-			- count cell neighbors
-			- if rules[cell][neighbors] true
-				- buffer the same position true
-			- else
-				- buffer the same position false
-		- swap buffer and board pointers
-		- draw
-			-> import from graphics.go and
-			-> give it the board object
-*/
-
 package gameoflife
 
 import (
 	"math/rand"
 	"time"
+
+	"github.com/nsf/termbox-go"
+)
+
+const (
+	CLOSED  = 0
+	RUNNING = 1
+	PAUSED  = 2
 )
 
 type Game struct {
@@ -38,7 +20,9 @@ type Game struct {
 	buffer        [][]int
 	rules         [2][9]int
 	cycleDuration time.Duration
-	drawingFunc   func([][]int)
+	drawingFunc   func([][]int, int)
+	state         int
+	keyChan       chan termbox.Event
 }
 
 func NewGame(rows int, cols int, durationMsecs int) *Game {
@@ -52,6 +36,8 @@ func NewGame(rows int, cols int, durationMsecs int) *Game {
 		buffer[i] = make([]int, cols)
 	}
 
+	keyChan := make(chan termbox.Event, 50)
+
 	game := &Game{
 		rows:   rows,
 		cols:   cols,
@@ -62,6 +48,8 @@ func NewGame(rows int, cols int, durationMsecs int) *Game {
 			{0, 0, 1, 1, 0, 0, 0, 0, 0},
 		},
 		cycleDuration: time.Millisecond * time.Duration(durationMsecs),
+		state:         RUNNING,
+		keyChan:       keyChan,
 	}
 
 	return game
@@ -146,21 +134,55 @@ func (g *Game) wait(startTime time.Time) {
 	elapsedTime := time.Since(startTime)
 	remainingTime := g.cycleDuration - elapsedTime
 
-	time.Sleep(remainingTime)
+	if remainingTime > time.Duration(0) {
+		time.Sleep(remainingTime)
+	}
 }
 
-func (g *Game) SetDrawingFunc(drawingFunc func([][]int)) {
+func (g *Game) readInput() {
+	termbox.SetInputMode(termbox.InputEsc)
+	for {
+		ev := termbox.PollEvent()
+		if ev.Type == termbox.EventKey {
+			switch ev.Key {
+			case termbox.KeyArrowLeft, termbox.KeyEsc:
+				g.state = CLOSED
+			case termbox.KeyArrowUp:
+				g.state = PAUSED
+				g.fillWithRandom()
+				g.state = RUNNING
+			case termbox.KeyArrowRight:
+				if g.state == PAUSED {
+					g.state = RUNNING
+				} else {
+					g.state = PAUSED
+				}
+			}
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+func (g *Game) SetDrawingFunc(drawingFunc func([][]int, int)) {
 	g.drawingFunc = drawingFunc
 }
 
 func (g *Game) Start() {
 	g.fillWithRandom()
+	go g.readInput()
 
 	for {
 		startTime := time.Now()
-		g.generateNewGeneration()
-		g.swapMatrices()
-		g.drawingFunc(g.board)
+		if g.state == CLOSED {
+			return
+		}
+
+		if g.state == RUNNING {
+			g.generateNewGeneration()
+			g.swapMatrices()
+		}
+
+		g.drawingFunc(g.board, g.state)
 		g.wait(startTime)
 	}
 }
