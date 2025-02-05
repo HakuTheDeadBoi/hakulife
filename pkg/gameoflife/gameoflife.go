@@ -8,9 +8,10 @@ import (
 )
 
 const (
-	CLOSED  = 0
-	RUNNING = 1
-	PAUSED  = 2
+	CLOSED             = 0
+	RUNNING            = 1
+	PAUSED             = 2
+	MSECONDSINPUTDELAY = 10
 )
 
 type Game struct {
@@ -144,14 +145,26 @@ func (g *Game) readInput() {
 	for {
 		ev := termbox.PollEvent()
 		if ev.Type == termbox.EventKey {
-			switch ev.Key {
-			case termbox.KeyArrowLeft, termbox.KeyEsc:
+			switch ev.Ch {
+			case 'Q':
 				g.state = CLOSED
-			case termbox.KeyArrowUp:
+			case 'q':
+				g.state = CLOSED
+			case 'R':
 				g.state = PAUSED
 				g.fillWithRandom()
 				g.state = RUNNING
-			case termbox.KeyArrowRight:
+			case 'r':
+				g.state = PAUSED
+				g.fillWithRandom()
+				g.state = RUNNING
+			case 'P':
+				if g.state == PAUSED {
+					g.state = RUNNING
+				} else {
+					g.state = PAUSED
+				}
+			case 'p':
 				if g.state == PAUSED {
 					g.state = RUNNING
 				} else {
@@ -159,7 +172,7 @@ func (g *Game) readInput() {
 				}
 			}
 		}
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(MSECONDSINPUTDELAY * time.Millisecond)
 	}
 }
 
