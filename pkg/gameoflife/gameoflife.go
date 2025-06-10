@@ -170,6 +170,22 @@ func (g *Game) readInput() {
 				} else {
 					g.state = PAUSED
 				}
+			case 'U':
+				if g.cycleDuration >= 20 {
+					g.cycleDuration /= 2
+				}
+			case 'u':
+				if g.cycleDuration >= 20 {
+					g.cycleDuration /= 2
+				}
+			case 'D':
+				if g.cycleDuration <= 500 {
+					g.cycleDuration *= 2
+				}
+			case 'd':
+				if g.cycleDuration <= 500 {
+					g.cycleDuration *= 2
+				}
 			}
 		}
 		time.Sleep(MSECONDSINPUTDELAY * time.Millisecond)
